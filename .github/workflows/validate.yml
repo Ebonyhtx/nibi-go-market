@@ -19,6 +19,8 @@ jobs:
         run: node scripts/check-leaks.mjs
       - name: Validate submissions
         run: node scripts/check-submissions.mjs
+      - name: Validate yank log
+        run: node scripts/check-yanks.mjs
       - name: Validate signed index and packages
         run: |
           BEFORE="${{ github.event.before }}"

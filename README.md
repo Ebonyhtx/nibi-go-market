@@ -30,9 +30,10 @@ NIBI-GO 的官方插件市场：保存**官方插件索引**与**插件包**，�
 | 路径 | 内容 |
 |---|---|
 | `index.json` / `index.json.sig` | 官方索引与其签名（客户端安装源） |
+| `yanked.json` | 撤回（下架）记录：id、版本、理由、时间与生效 revision |
 | `packages/` | 已进入或待审查的插件包（`.zip`） |
 | `submissions/` | 待审 PR 的元数据（未签名，不代表已上架） |
-| `scripts/` | CI 门禁（签名/摘要/版本/revision/泄露/提交格式） |
+| `scripts/` | CI 门禁（签名/摘要/版本/revision/泄露/提交格式/撤回记录） |
 | `.github/workflows/` | 每次 push / PR 运行上述门禁 |
 
 ## 发布（维护者）

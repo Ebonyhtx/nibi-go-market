@@ -18,10 +18,12 @@ const ALLOWED = [
   /^submissions\/[a-z0-9][a-z0-9._-]{0,120}\.json$/,
   /^index\.json$/,
   /^index\.json\.sig$/,
+  /^yanked\.json$/,
   /^packages\/[a-z0-9][a-z0-9._-]{0,80}\.zip$/,
   /^scripts\/validate\.mjs$/,
   /^scripts\/check-leaks\.mjs$/,
   /^scripts\/check-submissions\.mjs$/,
+  /^scripts\/check-yanks\.mjs$/,
   /^\.github\/workflows\/validate\.yml$/,
 ];
 
