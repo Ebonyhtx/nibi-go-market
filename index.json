@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
   "market": "nibi-official",
-  "revision": 2,
-  "generatedAt": "2026-11-20T05:30:00.000Z",
+  "revision": 3,
+  "generatedAt": "2026-11-20T05:50:00.000Z",
   "plugins": [
     {
       "id": "nibi.market.hello",
       "name": "市场示例",
-      "version": "0.1.0",
-      "description": "市场安装链路的最小示例：一个 hello 工具，返回问候语。",
+      "version": "0.1.1",
+      "description": "市场安装链路的最小示例（更新验证）：hello 工具返回带版本号的问候。",
       "caps": [
         "mcp.v1"
       ],
       "runtime": "node",
       "package": {
-        "url": "https://raw.githubusercontent.com/Ebonyhtx/nibi-go-market/main/packages/hello-0.1.0.zip",
-        "sha256": "7e8d8cd37983c06307f3fcccd5303551ebe4735dcb14ffd696b06593e5499bb8",
-        "size": 1380,
+        "url": "https://raw.githubusercontent.com/Ebonyhtx/nibi-go-market/main/packages/hello-0.1.1.zip",
+        "sha256": "e22e4d2f10403972ac3438a560f72f3919be478bcb85fdf2eee0c9b84ef2088a",
+        "size": 1412,
         "format": "zip"
       },
       "publisher": "NIBI Studio",
