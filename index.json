@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "market": "nibi-official",
-  "revision": 5,
-  "generatedAt": "2026-11-20T07:45:00.000Z",
+  "revision": 8,
+  "generatedAt": "2026-11-20T19:04:55.000Z",
   "plugins": [
     {
       "id": "nibi.market.hello",
