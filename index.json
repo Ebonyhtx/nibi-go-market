@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "market": "nibi-official",
-  "revision": 4,
-  "generatedAt": "2026-11-20T06:10:00.000Z",
+  "revision": 5,
+  "generatedAt": "2026-11-20T07:45:00.000Z",
   "plugins": [
     {
       "id": "nibi.market.hello",
@@ -20,10 +20,7 @@
         "format": "zip"
       },
       "publisher": "NIBI Studio",
-      "license": "Apache-2.0",
-      "paid": {
-        "priceId": "nibi-go-demo-monthly"
-      }
+      "license": "Apache-2.0"
     }
   ]
 }
