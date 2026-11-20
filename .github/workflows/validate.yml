@@ -17,7 +17,12 @@ jobs:
           node-version: 22
       - name: Leak gate
         run: node scripts/check-leaks.mjs
+      - name: Scan package fixtures
+        run: node --test scripts/scan-package.test.mjs
       - name: Validate submissions
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.actor }}
+          MARKET_MAINTAINERS: Ebonyhtx
         run: node scripts/check-submissions.mjs
       - name: Validate yank log
         run: node scripts/check-yanks.mjs

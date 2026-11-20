@@ -24,6 +24,10 @@ NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Reques
      "homepage": "https://example.com/my-plugin",
      "source": "https://github.com/example/my-plugin",
      "contact": "mailto:dev@example.com",
+     "publisher": {
+       "name": "Example Author",
+       "github": "example"
+     },
      "caps": ["mcp.v1"],
      "runtime": "node",
      "package": {
@@ -39,6 +43,30 @@ NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Reques
 > **不要修改 `index.json` / `index.json.sig`**：签名由维护者在本机完成，PR 中改动会导致
 > 签名校验失败。CI 会校验提交元数据、包摘要、清单一致性与必要声明。
 
+## 插件 id 归属（强验证）
+
+- `publisher.github` 必须是提交 PR 的 GitHub 账号；`source` 必须是同一账号名下的 GitHub
+  仓库（`https://github.com/<publisher.github>/...`）。CI 不只看字段，还核对 PR 作者。
+- 首次上架会把 `id` 绑定到该 GitHub 账号（写进签名索引的 `publisherGithub`）。之后同一
+  `id` 的更新必须由同一账号提交；换账号会被门禁拒绝，避免 drive-by 抢注或接管。
+- 组织/公司插件请由维护者走官方发布；公开 PR 只接受个人账号归属的插件，避免无法验证
+  组织成员身份。
+- 已有历史条目若尚未绑定发布者，只能由维护者更新；不要用公开 PR 去“认领”别人的 id。
+
+## 恶意代码自动扫描（启发式）
+
+`scripts/scan-package.mjs` 会解包并扫描所有条目。**high** 直接让 PR 失败，**review** 打印
+给维护者人工确认（不是自动放行/自动定罪）：
+
+- high：编码后 `eval`/`new Function`、反向 shell、挖矿、`rm -rf /`/`mkfs`/写块设备、
+  读取 SSH/AWS/NIBI 凭据、`curl|sh`/PowerShell `-enc`、路径越界、符号链接、重复条目、
+  zip bomb、`.git`/`.env` 等隐藏凭据文件。
+- review：`child_process`/`subprocess`/`os.system`、普通动态代码、base64 长载荷、
+  环境变量与网络请求同时出现、持久化、原生二进制、打包 `node_modules`。
+
+扫描是规则引擎，不是杀毒引擎；它降低明显恶意包进入人工审查的概率，但**不能证明安全**。
+人工审查仍必须逐项看包内容。
+
 ## 审查标准（维护者）
 
 机械门禁（CI 自动）：
@@ -47,8 +75,11 @@ NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Reques
 - 包存在、`sha256`/`size` 与元数据一致，清单 `id`/`version`/`name` 与提交一致；
 - `caps` 只包含已知能力（`view.v1` / `slots.v1` / `effects.v1` / `mcp.v1`）；
 - 必须声明 `license`（不接受 `UNLICENSED`）与可联系的 `contact`；
+- `publisher.github` 等于 PR 作者，`source` 仓库 owner 等于 `publisher.github`；
+- 已上架 id 的 `publisherGithub` 不可更换；
 - 未在提交里声明 `paid`（付费条目由维护者与授权链一起处理）；
-- 泄露门禁：仓库级白名单 + 凭据/本机路径/内部基础设施扫描。
+- 泄露门禁：仓库级白名单 + 凭据/本机路径/内部基础设施扫描；
+- 恶意代码静态扫描：high 失败，review 留给人工。
 
 人工审查（必须逐项确认）：
 

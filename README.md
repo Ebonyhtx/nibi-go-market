@@ -20,7 +20,8 @@ NIBI-GO 的官方插件市场：保存**官方插件索引**与**插件包**，�
 
 1. 把打包好的插件放进 `packages/<插件 id>-<版本>.zip`；
 2. 新增 `submissions/<插件 id>-<版本>.json` 描述元数据与包摘要；
-3. 开 PR，CI 会校验包结构、清单、摘要与必要声明；
+3. 开 PR，CI 会校验包结构、清单、摘要与必要声明，核对 `publisher.github`/PR 作者/
+   `source` 仓库的归属一致性，并对包内代码做静态恶意模式扫描；
 4. 维护者按 [CONTRIBUTING.md](CONTRIBUTING.md) 的清单审查，通过后由维护者更新并签名索引。
 
 提交格式、版本规则与审查标准见 [CONTRIBUTING.md](CONTRIBUTING.md)。

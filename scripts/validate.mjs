@@ -61,6 +61,16 @@ if (!index) {
       fail(`插件 id 重复：${plugin.id}`);
     } else seen.add(plugin.id);
     if (typeof plugin.version !== "string") fail(`${plugin.id} 缺少 version`);
+    if (plugin.publisher !== undefined && typeof plugin.publisher !== "string") {
+      fail(`${plugin.id} 的 publisher 必须是字符串`);
+    }
+    if (
+      plugin.publisherGithub !== undefined &&
+      (typeof plugin.publisherGithub !== "string" ||
+        !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/u.test(plugin.publisherGithub))
+    ) {
+      fail(`${plugin.id} 的 publisherGithub 不是合法 GitHub 登录名`);
+    }
     const pkg = plugin.package ?? {};
     if (typeof pkg.url !== "string" || !pkg.url.startsWith(RAW_PREFIX)) {
       fail(`${plugin.id} 的包地址必须在本仓 raw 前缀下`);
@@ -99,6 +109,14 @@ if (!index) {
         if (cmp < 0) fail(`${plugin.id} 版本倒退：${prev.version} → ${plugin.version}`);
         if (cmp === 0 && plugin.package?.sha256 !== prev.package?.sha256) {
           fail(`${plugin.id} 同版本 ${plugin.version} 的包摘要变了`);
+        }
+        if (
+          prev.publisherGithub &&
+          plugin.publisherGithub?.toLowerCase() !== prev.publisherGithub.toLowerCase()
+        ) {
+          fail(
+            `${plugin.id} 的发布者归属变了：@${prev.publisherGithub} → @${plugin.publisherGithub ?? "(空)"}`,
+          );
         }
       }
     } catch {

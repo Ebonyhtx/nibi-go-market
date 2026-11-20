@@ -24,6 +24,8 @@ const ALLOWED = [
   /^scripts\/check-leaks\.mjs$/,
   /^scripts\/check-submissions\.mjs$/,
   /^scripts\/check-yanks\.mjs$/,
+  /^scripts\/scan-package\.mjs$/,
+  /^scripts\/scan-package\.test\.mjs$/,
   /^\.github\/workflows\/validate\.yml$/,
 ];
 
