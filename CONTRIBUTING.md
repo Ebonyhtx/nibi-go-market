@@ -59,6 +59,18 @@ NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Reques
   二进制；原生二进制必须说明用途与来源。
 - **可维护性**：`source`/`homepage`/`contact` 可用；版本语义合理。
 
+## 维护者发布
+
+审查通过并合并 PR 后，在 NIBI-GO 仓执行：
+
+```bash
+pnpm market:publish ../nibi-go-market ../nibi-go-market/submissions/<id>-<version>.json
+```
+
+它会校验包摘要、把提交合并进 `index.json`（`revision` +1）、调用签名脚本并回读验签自检；
+之后提交并推送 `index.json` 与 `index.json.sig`。服务器上的定时任务会自动把变更镜像到
+分发 CDN。`--dry-run` 可先看 revision 变化。
+
 ## 版本与撤回
 
 - 同一 `id` 的版本只能前进；**同一版本号的包摘要不可变**，需要改包必须发新版本。
