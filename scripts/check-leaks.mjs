@@ -43,6 +43,14 @@ const RULES = [
     name: "public IPv4 URL",
     re: /https?:\/\/(?!127\.|0\.0\.0\.0|localhost)\d{1,3}(?:\.\d{1,3}){3}/,
   },
+  {
+    name: "internal container registry",
+    re: /[A-Za-z0-9.-]+\.(?:cr\.aliyuncs\.com|tencentcloudcr\.com)/,
+  },
+  {
+    name: "unpinned action",
+    re: /^\s*-?\s*uses:\s+(?!\.\/|docker:\/\/)[^\s#]+@(?![0-9a-f]{40}(?:\s|$))/,
+  },
 ];
 
 // 本脚本自身含规则字面量，跳过内容扫描（与 NIBI-GO 的 check-public-repo 同款处理）。
