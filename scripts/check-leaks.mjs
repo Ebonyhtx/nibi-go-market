@@ -10,11 +10,18 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 
 const ALLOWED = [
   /^README\.md$/,
+  /^LICENSE$/,
+  /^CONTRIBUTING\.md$/,
+  /^SECURITY\.md$/,
+  /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
+  /^submissions\/README\.md$/,
+  /^submissions\/[a-z0-9][a-z0-9._-]{0,120}\.json$/,
   /^index\.json$/,
   /^index\.json\.sig$/,
   /^packages\/[a-z0-9][a-z0-9._-]{0,80}\.zip$/,
   /^scripts\/validate\.mjs$/,
   /^scripts\/check-leaks\.mjs$/,
+  /^scripts\/check-submissions\.mjs$/,
   /^\.github\/workflows\/validate\.yml$/,
 ];
 
