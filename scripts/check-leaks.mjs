@@ -26,7 +26,9 @@ const ALLOWED = [
   /^scripts\/check-yanks\.mjs$/,
   /^scripts\/scan-package\.mjs$/,
   /^scripts\/scan-package\.test\.mjs$/,
+  /^scripts\/auto-publish\.mjs$/,
   /^\.github\/workflows\/validate\.yml$/,
+  /^\.github\/workflows\/auto-sign\.yml$/,
 ];
 
 const RULES = [

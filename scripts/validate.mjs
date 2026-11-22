@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 市场仓的发布门禁：签名、schema、包摘要、revision/版本不变量。
+// 市场仓的发布门禁：签名、schema（支持 format: "npm" 与标准 zip）、包摘要、revision/版本不变量。
 // 只读；不接触私钥。CI 与本地都可以跑：node scripts/validate.mjs [--before <git-ref>]
 import { createHash, createPublicKey, verify } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -10,6 +10,9 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 const MARKET = "nibi-official";
 const PUBLIC_KEY_HEX = "90c6acbb9a020d1d567807620250a56e5822e70324b894bbc3a03fe3a6a2fd04";
 const RAW_PREFIX = "https://raw.githubusercontent.com/Ebonyhtx/nibi-go-market/main/";
+const NPM_NAME_RE = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/u;
+const VERSION_RE = /^\d{1,6}(?:\.\d{1,6}){0,2}(?:[-+][0-9A-Za-z.-]{1,32})?$/u;
+const SRI_RE = /^sha(?:256|384|512)-[A-Za-z0-9+/]+=*$/u;
 
 const failures = [];
 function fail(message) {
@@ -23,6 +26,12 @@ function readIndexBytes(ref) {
   } catch {
     return null;
   }
+}
+
+function packagePinDigest(pkg) {
+  if (!pkg || typeof pkg !== "object") return "";
+  if (pkg.format === "npm") return `npm:${pkg.name}@${pkg.version}:${pkg.integrity}`;
+  return `zip:${pkg.sha256}`;
 }
 
 const indexBytes = fs.readFileSync(path.join(ROOT, "index.json"));
@@ -60,7 +69,9 @@ if (!index) {
     } else if (seen.has(plugin.id)) {
       fail(`插件 id 重复：${plugin.id}`);
     } else seen.add(plugin.id);
-    if (typeof plugin.version !== "string") fail(`${plugin.id} 缺少 version`);
+    if (typeof plugin.version !== "string" || !VERSION_RE.test(plugin.version)) {
+      fail(`${plugin.id} 缺少合法 version`);
+    }
     if (plugin.publisher !== undefined && typeof plugin.publisher !== "string") {
       fail(`${plugin.id} 的 publisher 必须是字符串`);
     }
@@ -72,21 +83,43 @@ if (!index) {
       fail(`${plugin.id} 的 publisherGithub 不是合法 GitHub 登录名`);
     }
     const pkg = plugin.package ?? {};
-    if (typeof pkg.url !== "string" || !pkg.url.startsWith(RAW_PREFIX)) {
-      fail(`${plugin.id} 的包地址必须在本仓 raw 前缀下`);
+    if (pkg.format === "npm") {
+      if (typeof pkg.name !== "string" || !NPM_NAME_RE.test(pkg.name)) {
+        fail(`${plugin.id} 的 npm 包名不合法：${pkg.name}`);
+      }
+      if (typeof pkg.version !== "string" || !VERSION_RE.test(pkg.version)) {
+        fail(`${plugin.id} 的 npm 版本号不合法：${pkg.version}`);
+      }
+      if (typeof pkg.integrity !== "string" || !SRI_RE.test(pkg.integrity)) {
+        fail(`${plugin.id} 的 npm integrity 不合法`);
+      }
       continue;
     }
-    const local = path.join(ROOT, pkg.url.slice(RAW_PREFIX.length));
-    if (!fs.existsSync(local)) {
-      fail(`${plugin.id} 的包文件不存在：${pkg.url.slice(RAW_PREFIX.length)}`);
+
+    if (pkg.format !== "zip") {
+      fail(`${plugin.id} 不支持的 package.format：${pkg.format}`);
       continue;
     }
-    const bytes = fs.readFileSync(local);
+    if (typeof pkg.url !== "string" || !pkg.url.startsWith("https://")) {
+      fail(`${plugin.id} 的包地址必须是 https 地址`);
+      continue;
+    }
     if (!/^[0-9a-f]{64}$/u.test(pkg.sha256 ?? "")) fail(`${plugin.id} 的 sha256 格式不对`);
-    else if (createHash("sha256").update(bytes).digest("hex") !== pkg.sha256) {
-      fail(`${plugin.id} 的包摘要与索引不一致`);
+    if (!Number.isInteger(pkg.size) || pkg.size <= 0) fail(`${plugin.id} 的 size 必须是正整数`);
+
+    // 仓内旧包核对本地字节；外部 Release ZIP 由 check-submissions 核对远端字节。
+    if (pkg.url.startsWith(RAW_PREFIX)) {
+      const local = path.join(ROOT, pkg.url.slice(RAW_PREFIX.length));
+      if (!fs.existsSync(local)) {
+        fail(`${plugin.id} 的包文件不存在：${pkg.url.slice(RAW_PREFIX.length)}`);
+        continue;
+      }
+      const bytes = fs.readFileSync(local);
+      if (createHash("sha256").update(bytes).digest("hex") !== pkg.sha256) {
+        fail(`${plugin.id} 的包摘要与索引不一致`);
+      }
+      if (pkg.size !== bytes.length) fail(`${plugin.id} 的包大小与索引不一致`);
     }
-    if (pkg.size !== bytes.length) fail(`${plugin.id} 的包大小与索引不一致`);
   }
 
   // 3) 与上一个提交比较：revision 只能前进，版本只能前进、同版本摘要不可变
@@ -107,7 +140,7 @@ if (!index) {
         if (!prev) continue;
         const cmp = compareVersions(plugin.version, prev.version);
         if (cmp < 0) fail(`${plugin.id} 版本倒退：${prev.version} → ${plugin.version}`);
-        if (cmp === 0 && plugin.package?.sha256 !== prev.package?.sha256) {
+        if (cmp === 0 && packagePinDigest(plugin.package) !== packagePinDigest(prev.package)) {
           fail(`${plugin.id} 同版本 ${plugin.version} 的包摘要变了`);
         }
         if (

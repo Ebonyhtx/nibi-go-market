@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "npm.modelcontextprotocol.server-memory",
+  "name": "知识图谱记忆（Memory）",
+  "version": "2.2.1",
+  "kind": "mcp",
+  "description": "官方纯 JS 实体与关系知识图谱 MCP，支持在本地持久记录与检索结构化记忆。",
+  "license": "MIT",
+  "homepage": "https://github.com/modelcontextprotocol/servers",
+  "source": "https://github.com/modelcontextprotocol/servers",
+  "contact": "https://github.com/modelcontextprotocol/servers/issues",
+  "publisher": {
+    "name": "Model Context Protocol",
+    "github": "modelcontextprotocol"
+  },
+  "caps": ["mcp.v1", "slots.v1"],
+  "runtime": "node",
+  "package": {
+    "format": "npm",
+    "name": "@modelcontextprotocol/server-memory",
+    "version": "2.2.1",
+    "integrity": "sha512-MMk597vxcPbnDvHYJ5aw+ODXrVnxJvZuL0K1MpX5uOg9EBmO4Tbz7q0VezVG7fIq9Woas9HM7UNC4T4iUTYI8A==",
+    "size": 95977,
+    "bin": "mcp-server-memory",
+    "serverName": "memory_graph"
+  }
+}

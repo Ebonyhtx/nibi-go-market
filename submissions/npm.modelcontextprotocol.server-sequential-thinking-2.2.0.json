@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "npm.modelcontextprotocol.server-sequential-thinking",
+  "name": "顺序思考（Sequential Thinking）",
+  "version": "2.2.0",
+  "kind": "mcp",
+  "description": "官方纯 JS 分步推理 MCP 服务器，辅助复杂问题的多步拆解、修订与分支验证。",
+  "license": "MIT",
+  "homepage": "https://github.com/modelcontextprotocol/servers",
+  "source": "https://github.com/modelcontextprotocol/servers",
+  "contact": "https://github.com/modelcontextprotocol/servers/issues",
+  "publisher": {
+    "name": "Model Context Protocol",
+    "github": "modelcontextprotocol"
+  },
+  "caps": ["mcp.v1", "slots.v1"],
+  "runtime": "node",
+  "package": {
+    "format": "npm",
+    "name": "@modelcontextprotocol/server-sequential-thinking",
+    "version": "2.2.0",
+    "integrity": "sha512-Tv3AniI/gc+X2J4YjJmZ0BCP/82clUTvOt7Z9z8PWHEdE4/123iHUyJJk0dRMCE/mlskmOuBAgHv+pDq6KvBDA==",
+    "size": 38346,
+    "bin": "mcp-server-sequential-thinking",
+    "serverName": "sequential_thinking"
+  }
+}

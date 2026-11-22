@@ -2,8 +2,9 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
+import zlib from "node:zlib";
 
-import { scanPackage, scanZipBytes } from "./scan-package.mjs";
+import { scanNpmTarballBytes, scanPackage, scanZipBytes } from "./scan-package.mjs";
 
 const LOCAL = 0x04034b50;
 const CENTRAL = 0x02014b50;
@@ -101,4 +102,59 @@ test("原生二进制只标 review，不冒充自动判定恶意", () => {
 test("仓库内 hello 包不触发 high", () => {
   const result = scanPackage(path.resolve("packages/hello-0.1.1.zip"));
   assert.equal(result.findings.filter((item) => item.severity === "high").length, 0);
+});
+
+/** 最小 POSIX tar.gz 构造器（测试 npm tarball 扫描用）。 */
+function tgz(entries) {
+  const chunks = [];
+  for (const entry of entries) {
+    const data = Buffer.isBuffer(entry.data) ? entry.data : Buffer.from(entry.data ?? "", "utf8");
+    const header = Buffer.alloc(512);
+    header.write(entry.name, 0, Math.min(entry.name.length, 100), "utf8");
+    header.write("0000644\0", 100, 8, "ascii");
+    header.write("0000000\0", 108, 8, "ascii");
+    header.write("0000000\0", 116, 8, "ascii");
+    header.write(`${data.length.toString(8).padStart(11, "0")}\0`, 124, 12, "ascii");
+    header.write("00000000000\0", 136, 12, "ascii");
+    header.fill(0x20, 148, 156);
+    header[156] = "0".charCodeAt(0);
+    header.write("ustar\0", 257, 6, "ascii");
+    header.write("00", 263, 2, "ascii");
+    let sum = 0;
+    for (let i = 0; i < 512; i += 1) sum += header[i];
+    header.write(`${sum.toString(8).padStart(6, "0")}\0 `, 148, 8, "ascii");
+    chunks.push(header, data);
+    const pad = (512 - (data.length % 512)) % 512;
+    if (pad > 0) chunks.push(Buffer.alloc(pad));
+  }
+  chunks.push(Buffer.alloc(1024));
+  return zlib.gzipSync(Buffer.concat(chunks));
+}
+
+test("纯 JS npm tarball 扫描通过，含 .node 或 postinstall 被 high 拦截", () => {
+  const ok = scanNpmTarballBytes(
+    tgz([
+      {
+        name: "package/package.json",
+        data: JSON.stringify({ name: "demo-mcp", version: "1.0.0", bin: "dist/index.js" }),
+      },
+      { name: "package/dist/index.js", data: "console.log('ready');\n" },
+    ]),
+  );
+  assert.equal(ok.findings.filter((item) => item.severity === "high").length, 0);
+
+  const badAddon = scanNpmTarballBytes(
+    tgz([{ name: "package/build/binding.node", data: Buffer.from([1, 2, 3, 4]) }]),
+  );
+  assert.ok(badAddon.findings.some((item) => item.rule === "npm-native-binary" && item.severity === "high"));
+
+  const badScript = scanNpmTarballBytes(
+    tgz([
+      {
+        name: "package/package.json",
+        data: JSON.stringify({ name: "bad-mcp", scripts: { postinstall: "node steal.js" } }),
+      },
+    ]),
+  );
+  assert.ok(badScript.findings.some((item) => item.rule === "npm-install-script" && item.severity === "high"));
 });

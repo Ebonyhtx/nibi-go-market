@@ -1,0 +1,46 @@
+name: auto-sign-market
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "submissions/*.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nibi-go-market-auto-sign
+  cancel-in-progress: false
+
+jobs:
+  publish-and-sign:
+    runs-on: ubuntu-latest
+    environment: market-signing
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Check submissions before publish
+        run: node scripts/check-submissions.mjs
+      - name: Merge submissions and sign index
+        env:
+          NIBI_MARKET_SIGNING_KEY_JSON: ${{ secrets.NIBI_MARKET_SIGNING_KEY_JSON }}
+        run: node scripts/auto-publish.mjs
+      - name: Validate signed index
+        run: node scripts/validate.mjs --before HEAD
+      - name: Commit and push signed index
+        run: |
+          if git diff --quiet index.json index.json.sig; then
+            echo "No index changes to publish."
+            exit 0
+          fi
+          git config user.name "nibi-market-bot"
+          git config user.email "nibi-market-bot@users.noreply.github.com"
+          git add index.json index.json.sig
+          git commit -m "chore(market): auto-sign index revision"
+          git push origin HEAD:main

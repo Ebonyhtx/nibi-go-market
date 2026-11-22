@@ -300,6 +300,110 @@ export function scanPackage(file, label = file) {
   return scanZipBytes(fs.readFileSync(file), label);
 }
 
+/**
+ * 扫描一个标准 npm .tgz（gzip + POSIX tar）字节：
+ * 面向手机端 NIBI-GO，拦截任何 .node/ELF/PE/Mach-O 原生二进制、安装期脚本（preinstall/install/postinstall）
+ * 及高危恶意代码模式。
+ */
+export function scanNpmTarballBytes(gzipBytes, label = "package.tgz") {
+  const findings = [];
+  let tar;
+  try {
+    tar = zlib.gunzipSync(gzipBytes);
+  } catch {
+    return { findings: [finding("high", "tgz", label, "不是合法的 gzip 压缩包")], entries: 0, totalBytes: 0 };
+  }
+  let offset = 0;
+  let entries = 0;
+  let totalBytes = 0;
+  const readStr = (buf, start, len) => {
+    const slice = buf.subarray(start, start + len);
+    const zero = slice.indexOf(0);
+    return (zero >= 0 ? slice.subarray(0, zero) : slice).toString("utf8");
+  };
+  while (offset + 512 <= tar.length) {
+    const header = tar.subarray(offset, offset + 512);
+    if (header.every((byte) => byte === 0)) break;
+    const rawName = readStr(header, 0, 100);
+    const prefix = readStr(header, 345, 155);
+    const fullName = prefix ? `${prefix}/${rawName}` : rawName;
+    const typeFlag = String.fromCharCode(header[156]);
+    const sizeText = readStr(header, 124, 12).trim();
+    const size = Number.parseInt(sizeText || "0", 8);
+    offset += 512;
+    if (!Number.isFinite(size) || size < 0 || offset + size > tar.length) {
+      findings.push(finding("high", "tar", label, `tar 条目长度异常：${fullName}`));
+      break;
+    }
+    const content = tar.subarray(offset, offset + size);
+    offset += Math.ceil(size / 512) * 512;
+    if (typeFlag === "5" || typeFlag === "g" || typeFlag === "x" || fullName.endsWith("/")) {
+      continue;
+    }
+    entries += 1;
+    if (entries > LIMITS.maxEntries) {
+      findings.push(finding("high", "tar-limits", label, `条目数超过 ${LIMITS.maxEntries}`));
+      break;
+    }
+    if (typeFlag === "1" || typeFlag === "2") {
+      findings.push(finding("high", "tar-symlink", fullName, "npm tarball 包含符号链接/硬链接"));
+      continue;
+    }
+    if (!safeEntryName(fullName, findings)) continue;
+    totalBytes += size;
+    if (totalBytes > LIMITS.maxTotalBytes) {
+      findings.push(finding("high", "tar-limits", label, "解压后体积超过上限"));
+      break;
+    }
+
+    const lower = fullName.toLowerCase();
+    if (
+      lower.endsWith(".node") ||
+      lower.endsWith(".so") ||
+      lower.endsWith(".dylib") ||
+      lower.endsWith(".dll") ||
+      lower.endsWith(".exe")
+    ) {
+      findings.push(finding("high", "npm-native-binary", fullName, "手机端 npm 包禁止包含原生二进制文件"));
+      continue;
+    }
+    if (fullName === "package/package.json" || fullName === "package.json") {
+      try {
+        const pkg = JSON.parse(content.toString("utf8"));
+        if (pkg.gypfile === true || pkg.binary !== undefined) {
+          findings.push(finding("high", "npm-native-gyp", fullName, "包声明了原生编译配置（gypfile/binary）"));
+        }
+        const scripts = pkg.scripts ?? {};
+        for (const hook of ["preinstall", "install", "postinstall"]) {
+          if (typeof scripts[hook] === "string" && scripts[hook].trim()) {
+            findings.push(
+              finding("high", "npm-install-script", fullName, `手机端市场包禁止声明 ${hook} 脚本`),
+            );
+          }
+        }
+      } catch {
+        findings.push(finding("high", "npm-package-json", fullName, "package.json 不是合法 JSON"));
+      }
+    }
+
+    if (isTextName(fullName) || looksText(content)) {
+      scanText(content.toString("utf8"), fullName, findings);
+    } else {
+      const elf = content.length >= 4 && content[0] === 0x7f && content[1] === 0x45 && content[2] === 0x4c && content[3] === 0x46;
+      const pe = content.length >= 2 && content[0] === 0x4d && content[1] === 0x5a;
+      const machO =
+        content.length >= 4 &&
+        (content.readUInt32BE(0) === 0xfeedface ||
+          content.readUInt32BE(0) === 0xfeedfacf ||
+          content.readUInt32BE(0) === 0xcafebabe);
+      if (elf || pe || machO) {
+        findings.push(finding("high", "npm-native-binary", fullName, "手机端 npm 包禁止包含可执行二进制"));
+      }
+    }
+  }
+  return { findings, entries, totalBytes };
+}
+
 /** CLI：node scripts/scan-package.mjs <zip>；high → exit 1。 */
 if (import.meta.url === `file://${process.argv[1]?.replace(/\\/gu, "/")}` || process.argv[1]?.endsWith("scan-package.mjs")) {
   const file = process.argv[2];
