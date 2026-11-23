@@ -122,6 +122,52 @@ if (!index) {
     }
   }
 
+  // 2.1) 可选的随包官方目录：只做展示元数据，不允许包体字段
+  if (index.bundledPlugins !== undefined) {
+    if (!Array.isArray(index.bundledPlugins)) {
+      fail("bundledPlugins 必须是数组");
+    } else {
+      const bundledSeen = new Set();
+      for (const entry of index.bundledPlugins) {
+        const id = entry?.id;
+        if (typeof id !== "string" || !/^[a-z0-9][a-z0-9._-]{0,63}$/u.test(id)) {
+          fail(`bundledPlugins id 不合法：${id}`);
+        } else if (bundledSeen.has(id)) {
+          fail(`bundledPlugins id 重复：${id}`);
+        } else {
+          bundledSeen.add(id);
+        }
+        if (typeof entry?.name !== "string" || entry.name.length < 1 || entry.name.length > 64) {
+          fail(`${id} 的 bundled name 不合法`);
+        }
+        if (typeof entry?.version !== "string" || !VERSION_RE.test(entry.version)) {
+          fail(`${id} 的 bundled version 不合法`);
+        }
+        if (
+          entry?.description !== undefined &&
+          (typeof entry.description !== "string" || entry.description.length > 280)
+        ) {
+          fail(`${id} 的 bundled description 不合法`);
+        }
+        if (
+          entry?.minApp !== undefined &&
+          (typeof entry.minApp !== "string" || entry.minApp.length > 32)
+        ) {
+          fail(`${id} 的 bundled minApp 不合法`);
+        }
+        if (
+          entry?.publisher !== undefined &&
+          (typeof entry.publisher !== "string" || entry.publisher.length > 64)
+        ) {
+          fail(`${id} 的 bundled publisher 不合法`);
+        }
+        if (entry?.package !== undefined) {
+          fail(`${id} 是随包内置条目，不应带 package`);
+        }
+      }
+    }
+  }
+
   // 3) 与上一个提交比较：revision 只能前进，版本只能前进、同版本摘要不可变
   const beforeIndex = process.argv.includes("--before")
     ? readIndexBytes(process.argv[process.argv.indexOf("--before") + 1])
