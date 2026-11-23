@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "market": "nibi-official",
-  "revision": 8,
-  "generatedAt": "2026-11-20T19:04:55.000Z",
+  "revision": 9,
+  "generatedAt": "2026-11-23T02:00:47.488Z",
   "plugins": [
     {
       "id": "nibi.market.hello",
@@ -21,6 +21,58 @@
       },
       "publisher": "NIBI Studio",
       "license": "Apache-2.0"
+    },
+    {
+      "id": "npm.modelcontextprotocol.server-memory",
+      "name": "知识图谱记忆（Memory）",
+      "version": "2.2.1",
+      "description": "官方纯 JS 实体与关系知识图谱 MCP，支持在本地持久记录与检索结构化记忆。",
+      "kind": "mcp",
+      "caps": [
+        "mcp.v1",
+        "slots.v1"
+      ],
+      "runtime": "node",
+      "license": "MIT",
+      "homepage": "https://github.com/modelcontextprotocol/servers",
+      "source": "https://github.com/modelcontextprotocol/servers",
+      "publisher": "Model Context Protocol",
+      "publisherGithub": "modelcontextprotocol",
+      "package": {
+        "format": "npm",
+        "name": "@modelcontextprotocol/server-memory",
+        "version": "2.2.1",
+        "integrity": "sha512-MMk597vxcPbnDvHYJ5aw+ODXrVnxJvZuL0K1MpX5uOg9EBmO4Tbz7q0VezVG7fIq9Woas9HM7UNC4T4iUTYI8A==",
+        "size": 95977,
+        "bin": "mcp-server-memory",
+        "serverName": "memory_graph"
+      }
+    },
+    {
+      "id": "npm.modelcontextprotocol.server-sequential-thinking",
+      "name": "顺序思考（Sequential Thinking）",
+      "version": "2.2.0",
+      "description": "官方纯 JS 分步推理 MCP 服务器，辅助复杂问题的多步拆解、修订与分支验证。",
+      "kind": "mcp",
+      "caps": [
+        "mcp.v1",
+        "slots.v1"
+      ],
+      "runtime": "node",
+      "license": "MIT",
+      "homepage": "https://github.com/modelcontextprotocol/servers",
+      "source": "https://github.com/modelcontextprotocol/servers",
+      "publisher": "Model Context Protocol",
+      "publisherGithub": "modelcontextprotocol",
+      "package": {
+        "format": "npm",
+        "name": "@modelcontextprotocol/server-sequential-thinking",
+        "version": "2.2.0",
+        "integrity": "sha512-Tv3AniI/gc+X2J4YjJmZ0BCP/82clUTvOt7Z9z8PWHEdE4/123iHUyJJk0dRMCE/mlskmOuBAgHv+pDq6KvBDA==",
+        "size": 38346,
+        "bin": "mcp-server-sequential-thinking",
+        "serverName": "sequential_thinking"
+      }
     }
   ]
 }
