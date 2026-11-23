@@ -1,27 +1,9 @@
 {
   "schemaVersion": 1,
   "market": "nibi-official",
-  "revision": 9,
-  "generatedAt": "2026-11-23T02:00:47.488Z",
+  "revision": 10,
+  "generatedAt": "2026-11-23T17:48:09.000Z",
   "plugins": [
-    {
-      "id": "nibi.market.hello",
-      "name": "市场示例",
-      "version": "0.1.1",
-      "description": "市场安装链路的最小示例（更新验证）：hello 工具返回带版本号的问候。",
-      "caps": [
-        "mcp.v1"
-      ],
-      "runtime": "node",
-      "package": {
-        "url": "https://raw.githubusercontent.com/Ebonyhtx/nibi-go-market/main/packages/hello-0.1.1.zip",
-        "sha256": "e22e4d2f10403972ac3438a560f72f3919be478bcb85fdf2eee0c9b84ef2088a",
-        "size": 1412,
-        "format": "zip"
-      },
-      "publisher": "NIBI Studio",
-      "license": "Apache-2.0"
-    },
     {
       "id": "npm.modelcontextprotocol.server-memory",
       "name": "知识图谱记忆（Memory）",
@@ -73,6 +55,56 @@
         "bin": "mcp-server-sequential-thinking",
         "serverName": "sequential_thinking"
       }
+    }
+  ],
+  "bundledPlugins": [
+    {
+      "id": "nibigo-documents",
+      "name": "Word 文档",
+      "version": "1.0.0",
+      "description": "创建、排版与解析标准 Word (.docx) 文档，支持多级标题、段落、列表与数据表格。",
+      "minApp": "0.1.0",
+      "publisher": "NIBI Studio"
+    },
+    {
+      "id": "nibigo-spreadsheets",
+      "name": "Excel 表格",
+      "version": "1.0.0",
+      "description": "生成与分析标准 Excel (.xlsx) 工作簿及 CSV 数据表，自动校验行列结构与数值指标。",
+      "minApp": "0.1.0",
+      "publisher": "NIBI Studio"
+    },
+    {
+      "id": "nibigo-presentations",
+      "name": "PPT 演示",
+      "version": "1.0.0",
+      "description": "生成 16:9 宽屏 PowerPoint (.pptx) 演示文稿，或提取现有 PPT 的分页大纲。",
+      "minApp": "0.1.0",
+      "publisher": "NIBI Studio"
+    },
+    {
+      "id": "nibigo-pdf",
+      "name": "PDF 工具箱",
+      "version": "1.0.0",
+      "description": "生成标准 PDF (.pdf) 文档，或解析现有 PDF 文件的页数、体积与文本内容。",
+      "minApp": "0.1.0",
+      "publisher": "NIBI Studio"
+    },
+    {
+      "id": "nibigo-visualize",
+      "name": "图表与可视化",
+      "version": "1.0.0",
+      "description": "对齐 NIBI 客户端 visualize 插件：在对话中直接渲染 SVG 统计图表、架构图与交互式 HTML 看板。",
+      "minApp": "0.1.0",
+      "publisher": "NIBI Studio"
+    },
+    {
+      "id": "nibigo-guide",
+      "name": "NIBI-GO 指南",
+      "version": "1.0.0",
+      "description": "内置使用手册与插件开发指南：App 功能地图、10 个 UI 槽位、MCP/技能/命令做法与上架流程。",
+      "minApp": "0.1.0",
+      "publisher": "NIBI Studio"
     }
   ]
 }
