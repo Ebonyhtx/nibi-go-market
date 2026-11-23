@@ -1,5 +1,7 @@
 // 静态扫描的变异夹具：良性包通过，高置信度恶意模式必须变红。
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import zlib from "node:zlib";
@@ -99,9 +101,22 @@ test("原生二进制只标 review，不冒充自动判定恶意", () => {
   assert.ok(result.findings.some((item) => item.rule === "native-binary" && item.severity === "review"));
 });
 
-test("仓库内 hello 包不触发 high", () => {
-  const result = scanPackage(path.resolve("packages/hello-0.1.1.zip"));
-  assert.equal(result.findings.filter((item) => item.severity === "high").length, 0);
+test("良性插件包文件不触发 high", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nibi-scan-"));
+  const file = path.join(dir, "benign.zip");
+  fs.writeFileSync(
+    file,
+    zip([
+      { name: "nibi-go.plugin.json", data: JSON.stringify({ id: "com.example.hello", version: "1.0.0" }) },
+      { name: "index.js", data: "export function hello(){ return 'ok'; }\n" },
+    ]),
+  );
+  try {
+    const result = scanPackage(file);
+    assert.equal(result.findings.filter((item) => item.severity === "high").length, 0);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 /** 最小 POSIX tar.gz 构造器（测试 npm tarball 扫描用）。 */
