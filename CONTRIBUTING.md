@@ -1,47 +1,54 @@
 # 提交插件
 
-NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Request 完成，维护者审查后由维护者
-更新并签名官方索引（`index.json`）。
+NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Request 完成，通过自动化审查门禁与
+维护者复核并合并后，由官方签名流水线更新并签名官方索引（`index.json` + `index.json.sig`）。
 
 ## 提交流程
 
 1. Fork 本仓并新建分支。
-2. 准备插件包 `packages/<id>-<version>.zip`：
-   - 包根目录必须有 `nibi-go.plugin.json`（GO 插件清单，`schemaVersion: 1`）；
-   - 清单里的 `id`/`version` 必须与文件名、提交元数据一致；
-   - 单包解压后 ≤ 32 MiB、文件数 ≤ 500、单文件 ≤ 16 MiB；路径不得越界（无 `..`、绝对路径）；
-   - 不要包含凭据、本机路径或构建产物缓存。
-3. 新增 `submissions/<id>-<version>.json`：
+2. 按插件类型准备包体与提交描述符 `submissions/<id>-<version>.json`：
+   - **方式 A · 纯 JS npm MCP 包（推荐 MCP 插件）**：
+     无需向 Git 仓库提交二进制或压缩包，只需把已发布到公共 npm registry 的精确版本与 SRI
+     `integrity` 填进提交 JSON（禁止 `.node`/原生二进制及 `preinstall`/`install`/`postinstall` 脚本）：
 
-   ```json
-   {
-     "schemaVersion": 1,
-     "id": "com.example.my-plugin",
-     "name": "示例插件",
-     "version": "1.0.0",
-     "description": "一句话说明它做什么（≤280 字）",
-     "license": "MIT",
-     "homepage": "https://example.com/my-plugin",
-     "source": "https://github.com/example/my-plugin",
-     "contact": "mailto:dev@example.com",
-     "publisher": {
-       "name": "Example Author",
-       "github": "example"
-     },
-     "caps": ["mcp.v1"],
-     "runtime": "node",
-     "package": {
-       "file": "packages/com.example.my-plugin-1.0.0.zip",
-       "sha256": "<64 位小写 hex>",
-       "size": 12345
+     ```json
+     {
+       "schemaVersion": 1,
+       "id": "npm.example.my-mcp",
+       "name": "示例 MCP",
+       "version": "1.0.0",
+       "kind": "mcp",
+       "description": "一句话说明它做什么（≤280 字）",
+       "license": "MIT",
+       "homepage": "https://github.com/example/my-mcp",
+       "source": "https://github.com/example/my-mcp",
+       "contact": "https://github.com/example/my-mcp/issues",
+       "publisher": { "name": "Example Author", "github": "example" },
+       "caps": ["mcp.v1", "slots.v1"],
+       "runtime": "node",
+       "package": {
+         "format": "npm",
+         "name": "@example/my-mcp",
+         "version": "1.0.0",
+         "integrity": "sha512-...",
+         "bin": "my-mcp",
+         "serverName": "my_mcp"
+       }
      }
-   }
-   ```
+     ```
 
-4. 开 PR 并勾选 PR 模板里的检查项。
+   - **方式 B · 外部 HTTPS Release ZIP（推荐技能 / 跨端扩展）**：
+     将插件 ZIP 发布在本人 GitHub Release（`url` 必须 `https://`），在 `package` 中声明
+     `"format": "zip"`、`"url"`、`"sha256"` 与 `"size"`；ZIP 内须带 `nibi-go.plugin.json`、
+     `.nibi-plugin/.claude-plugin/.codex-plugin/plugin.json` 或 `SKILL.md` / `commands/*.md`：
+     - 单包解压后 ≤ 32 MiB、文件数 ≤ 500、单文件 ≤ 16 MiB；路径不得越界（无 `..`、绝对路径）；
+     - 不要包含凭据、本机路径或构建产物缓存。
+   - **方式 C · 仓内 ZIP（历史兼容）**：放至 `packages/<id>-<version>.zip` 并填 `"file"` / `"sha256"` / `"size"`。
 
-> **不要修改 `index.json` / `index.json.sig`**：签名由维护者在本机完成，PR 中改动会导致
-> 签名校验失败。CI 会校验提交元数据、包摘要、清单一致性与必要声明。
+3. 开 PR 并勾选 PR 模板里的检查项。
+
+> **不要修改 `index.json` / `index.json.sig`**：PR 中改动会导致签名校验失败。签名由合并后的
+> 自动签名工作流（或维护者离线备份命令）统一签发。
 
 ## 插件 id 归属（强验证）
 
@@ -55,31 +62,33 @@ NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Reques
 
 ## 恶意代码自动扫描（启发式）
 
-`scripts/scan-package.mjs` 会解包并扫描所有条目。**high** 直接让 PR 失败，**review** 打印
-给维护者人工确认（不是自动放行/自动定罪）：
+`scripts/scan-package.mjs` 会解包 ZIP 或拉取 npm `.tgz` 并扫描所有条目。**high** 直接让 PR 失败，
+**review** 打印给维护者人工确认（不是自动放行/自动定罪）：
 
 - high：编码后 `eval`/`new Function`、反向 shell、挖矿、`rm -rf /`/`mkfs`/写块设备、
   读取 SSH/AWS/NIBI 凭据、`curl|sh`/PowerShell `-enc`、路径越界、符号链接、重复条目、
-  zip bomb、`.git`/`.env` 等隐藏凭据文件。
+  zip bomb、`.git`/`.env` 等隐藏凭据文件；npm 包额外拦截 `.node`/ELF/PE/Mach-O 原生二进制、
+  `gypfile` 编译声明及 `preinstall`/`install`/`postinstall` 钩子。
 - review：`child_process`/`subprocess`/`os.system`、普通动态代码、base64 长载荷、
-  环境变量与网络请求同时出现、持久化、原生二进制、打包 `node_modules`。
+  环境变量与网络请求同时出现、持久化、ZIP 内原生二进制、打包 `node_modules`。
 
 扫描是规则引擎，不是杀毒引擎；它降低明显恶意包进入人工审查的概率，但**不能证明安全**。
 人工审查仍必须逐项看包内容。
 
 ## 审查标准（维护者）
 
-机械门禁（CI 自动）：
+机械门禁（CI `validate-market` 自动，只读无私钥）：
 
-- `submissions/*.json` 字段合法，文件名与 `id`/`version` 一致；
-- 包存在、`sha256`/`size` 与元数据一致，清单 `id`/`version`/`name` 与提交一致；
+- 泄露门禁：仓库级白名单 + 凭据/本机路径/内部基础设施/图片 EXIF/Action SHA 校验；
+- 扫描器夹具回归自检（`scripts/scan-package.test.mjs`）；
+- `submissions/*.json` 字段合法，文件名与 `<id>-<version>.json` 一致；
+- 包体拉取核验：npm 包校验精确版本、`dist.integrity`、兼容 `linux`/`android` 与 `bin`/`main` 入口；
+  ZIP 包校验 `sha256`/`size` 与清单一致性；
 - `caps` 只包含已知能力（`view.v1` / `slots.v1` / `effects.v1` / `mcp.v1`）；
 - 必须声明 `license`（不接受 `UNLICENSED`）与可联系的 `contact`；
 - `publisher.github` 等于 PR 作者，`source` 仓库 owner 等于 `publisher.github`；
-- 已上架 id 的 `publisherGithub` 不可更换；
-- 未在提交里声明 `paid`（付费条目由维护者与授权链一起处理）；
-- 泄露门禁：仓库级白名单 + 凭据/本机路径/内部基础设施扫描；
-- 恶意代码静态扫描：high 失败，review 留给人工。
+- 已上架 id 的 `publisherGithub` 不可更换，未在提交里声明 `paid`；
+- 撤回账本 `yanked.json` 与索引、签名、revision 单调性校验。
 
 人工审查（必须逐项确认）：
 
@@ -92,15 +101,16 @@ NIBI-GO 的插件市场只分发经过审查的条目。提交通过 Pull Reques
 
 ## 维护者发布
 
-审查通过并合并 PR 后，在 NIBI-GO 仓执行：
+1. **自动签发（主流程）**：审查通过并合入 PR 到 `main` 后，受保护环境里的 `auto-sign-market`
+   工作流（`scripts/auto-publish.mjs`）会自动扫描 `submissions/*.json`、按版本前进合并进
+   `index.json`（整批 `revision +1`）、签发 `index.json.sig`、回读验签并推回 `main`。
+2. **本机兜底命令**：如离线维护或在 NIBI-GO 仓手工处理单条提交，可执行：
 
 ```bash
-pnpm market:publish ../nibi-go-market ../nibi-go-market/submissions/<id>-<version>.json
+pnpm market:publish ../nibi-go-market ../nibi-go-market/submissions/<id>-<version>.json [--dry-run]
 ```
 
-它会校验包摘要、把提交合并进 `index.json`（`revision` +1）、调用签名脚本并回读验签自检；
-之后提交并推送 `index.json` 与 `index.json.sig`。服务器上的定时任务会自动把变更镜像到
-分发 CDN。`--dry-run` 可先看 revision 变化。
+它会在本机校验摘要、推进 `revision`、调用签名并回读验签；随后提交推送 `index.json` 与 `index.json.sig`。
 
 ## 版本与撤回
 
